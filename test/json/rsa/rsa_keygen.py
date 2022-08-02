@@ -30,9 +30,7 @@ def ref_testgroup_and_test(single):
 def ref_last_testgroup(single):
     # Get ref to last testGroups item
     test_groups = single[1]["testGroups"]
-    test_group = test_groups[1]
-
-    return test_group
+    return test_groups[1]
 
 def ref_last_test(single):
     # Get ref to last testGroups item
@@ -41,9 +39,7 @@ def ref_last_test(single):
 
     # Get ref to last test item
     tests = test_group["tests"]
-    test = tests[0]
-
-    return test
+    return tests[0]
 
 
 def gen(j=None):
@@ -212,10 +208,7 @@ def gen(j=None):
         # Need to be part of that set to kick of error condition
         tg["randPQ"] = "B.3.3"
 
-    if "primeTest" in tg:
-        tg["primeTest"] = "my" + tg["primeTest"]
-    else:
-        tg["primeTest"] = "mytblC2"
+    tg["primeTest"] = "my" + tg["primeTest"] if "primeTest" in tg else "mytblC2"
     with open(os.path.join(cur_dir, "rsa_keygen_13.json"), "w") as fp:
         json.dump(s, fp, indent=2)
 
@@ -260,10 +253,7 @@ def gen(j=None):
         # Need to be part of that set to kick of error condition
         tg["randPQ"] = "B.3.2"
 
-    if "hashAlg" in tg:
-        tg["hashAlg"] = "my" + tg["hashAlg"]
-    else:
-        tg["hashAlg"] = "mySHA-1"
+    tg["hashAlg"] = "my" + tg["hashAlg"] if "hashAlg" in tg else "mySHA-1"
     with open(os.path.join(cur_dir, "rsa_keygen_17.json"), "w") as fp:
         json.dump(s, fp, indent=2)
 

@@ -31,9 +31,7 @@ def ref_testgroup_and_test(single):
 def ref_last_testgroup(single):
     # Get ref to last testGroups item
     test_groups = single[1]["testGroups"]
-    test_group = test_groups[1]
-
-    return test_group
+    return test_groups[1]
 
 
 def ref_last_test(single):
@@ -43,9 +41,7 @@ def ref_last_test(single):
 
     # Get ref to last test item
     tests = test_group["tests"]
-    test = tests[128]
-
-    return test
+    return tests[128]
 
 
 def gen(j=None):

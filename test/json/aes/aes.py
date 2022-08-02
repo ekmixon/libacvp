@@ -33,22 +33,16 @@ class Trim():
         if obj["direction"] == "encrypt":
             if self.got_encrypt:
                 return False
-            else:
-                # Trim the tests down to 1 item
-                obj["tests"] = obj["tests"][:1]
-                self.got_encrypt = True
-                return True
+            # Trim the tests down to 1 item
+            obj["tests"] = obj["tests"][:1]
+            self.got_encrypt = True
         else:
             if self.got_decrypt:
                 return False
-            else:
-                # Trim the tests down to 1 item
-                obj["tests"] = obj["tests"][:1]
-                self.got_decrypt = True
-                return True
-
-        # Remove everything else (including MCT to shave off time)
-        return False
+            # Trim the tests down to 1 item
+            obj["tests"] = obj["tests"][:1]
+            self.got_decrypt = True
+        return True
 
     def run(self, j_list):
         # Start from index 1 to avoid the version object
@@ -72,9 +66,7 @@ def ref_testgroup_and_test(single):
 def ref_last_testgroup(single):
     # Get ref to last testGroups item
     test_groups = single[1]["testGroups"]
-    test_group = test_groups[35]
-
-    return test_group
+    return test_groups[35]
 
 def ref_last_test(single):
     # Get ref to last testGroups item
@@ -83,9 +75,7 @@ def ref_last_test(single):
 
     # Get ref to last test item
     tests = test_group["tests"]
-    test = tests[0]
-
-    return test
+    return tests[0]
 
 def ref_testgroup_and_test(j_list, group_type=ENCRYPT):
     # Start from index 1 to avoid the version object

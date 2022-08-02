@@ -29,20 +29,16 @@ class Trim:
         :return: True to keep
         :return: False to remove
         """
-        if not self.comp:
-            pass
-        else:
-            if obj["testType"] != "VAL":
-                # Only want VAL for Component mode
-                return False
+        if self.comp and obj["testType"] != "VAL":
+            # Only want VAL for Component mode
+            return False
 
         if self.got_it:
             return False
-        else:
-            # Trim the tests down to 1 item
-            obj["tests"] = obj["tests"][:1]
-            self.got_it = True
-            return True
+        # Trim the tests down to 1 item
+        obj["tests"] = obj["tests"][:1]
+        self.got_it = True
+        return True
 
     def run(self, j_list):
         # Start from index 1 to avoid the version object
@@ -65,9 +61,7 @@ def ref_testgroup_and_test(j_list):
 def ref_last_testgroup(single, tg):
     # Get ref to last testGroups item
     test_groups = single[1]["testGroups"]
-    test_group = test_groups[tg]
-
-    return test_group
+    return test_groups[tg]
 
 def ref_last_test(single, tg):
     # Get ref to last testGroups item
@@ -76,9 +70,7 @@ def ref_last_test(single, tg):
 
     # Get ref to last test item
     tests = test_group["tests"]
-    test = tests[0]
-
-    return test
+    return tests[0]
 
 
 def gen_comp(j=None):

@@ -41,27 +41,16 @@ HEADERS = None
 
 
 def compare_emails(this, their):
-    if "emails" in this:
-        if this["emails"] != their["emails"]:
-            # The emails string lists are not equal
-            return False
-    else:
-        if len(their["emails"]) != 0:
-            # The candidate has a non-empty "emails" list, but our vendor does not
-            return False
-    return True
+    return ("emails" not in this or this["emails"] == their["emails"]) and (
+        "emails" in this or len(their["emails"]) == 0
+    )
 
 
 def compare_phone_numbers(this, their):
-    if "phoneNumbers" in this:
-        if this["phoneNumbers"] != their["phoneNumbers"]:
-            # The list of phoneNumber dicts are not equal
-            return False
-    else:
-        if len(their["phoneNumbers"]) != 0:
-            # The candidate has a non-empty "phoneNumbers" list, but our vendor does not
-            return False
-    return True
+    return (
+        "phoneNumbers" not in this
+        or this["phoneNumbers"] == their["phoneNumbers"]
+    ) and ("phoneNumbers" in this or len(their["phoneNumbers"]) == 0)
 
 
 class Resource:
@@ -82,9 +71,7 @@ class Vendor(Resource):
     def _ingest_data(self, data):
         self.id = data["id"]
 
-        clean_data = dict()
-        clean_data["name"] = data["name"]
-
+        clean_data = {"name": data["name"]}
         try:
             clean_data["website"] = data["website"]
         except KeyError:
@@ -138,15 +125,13 @@ class Vendor(Resource):
                     if not isinstance(value, str):
                         raise ValueError("This value needs to be a str")
 
-                    if "street2" in x:
-                        if x["street2"] is None:
-                            # Don't include for null values
-                            del x["street2"]
+                    if "street2" in x and x["street2"] is None:
+                        # Don't include for null values
+                        del x["street2"]
 
-                    if "street3" in x:
-                        if x["street3"] is None:
-                            # Don't include for null values
-                            del x["street3"]
+                    if "street3" in x and x["street3"] is None:
+                        # Don't include for null values
+                        del x["street3"]
 
             clean_data["addresses"] = addresses
         except KeyError:
@@ -159,9 +144,7 @@ class Vendor(Resource):
 
     def _match_exact(self, candidates):
         def compare_name(this, their):
-            if this["name"] != their["name"]:
-                return False
-            return True
+            return this["name"] == their["name"]
 
         def compare_website(this, their):
             if "website" in this:
@@ -230,9 +213,7 @@ class Vendor(Resource):
             # First page.
             # Need to form the query syntax
             url = f"https://{ACV_SERVER}/{ACV_API_PREFIX}/vendors"
-            params = dict()
-
-            params["name[0]"] = ":".join(["eq", self.data["name"]])
+            params = {"name[0]": ":".join(["eq", self.data["name"]])}
 
             if "website" in self.data:
                 params["website[0]"] = ":".join(["eq", self.data["website"]])
@@ -241,7 +222,7 @@ class Vendor(Resource):
                 for i, email in enumerate(self.data["emails"]):
                     params[f"email[{i}]"] = ":".join(["eq", email])
 
-            # TODO add phone number here
+                # TODO add phone number here
 
         else:
             # Use next_endpoint.
@@ -315,9 +296,7 @@ class Person(Resource):
         super().__init__(self._ingest_data(data))
 
     def _ingest_data(self, data):
-        clean_data = dict()
-        clean_data["fullName"] = data["fullName"]
-
+        clean_data = {"fullName": data["fullName"]}
         try:
             # The url was provided, so use that as priority
             vendor_url = data["vendorUrl"]
@@ -369,9 +348,7 @@ class Person(Resource):
 
     def _match_exact(self, candidates):
         def compare_full_name(this, their):
-            if this["fullName"] != their["fullName"]:
-                return False
-            return True
+            return this["fullName"] == their["fullName"]
 
         for c in candidates:
             if not compare_full_name(self.data, c):
@@ -396,10 +373,7 @@ class Person(Resource):
             # First page.
             # Need to form the query syntax
             url = f"https://{ACV_SERVER}/{ACV_API_PREFIX}/persons"
-            params = dict()
-
-            # Full name
-            params["fullName[0]"] = ":".join(["eq", self.data["fullName"]])
+            params = {"fullName[0]": ":".join(["eq", self.data["fullName"]])}
 
             # Vendor ID. Split the url string and get last element.
             vendor_id = self.vendor_url.split("/")[-1]
@@ -450,12 +424,7 @@ class Person(Resource):
             r.server_data = get_resource_server_data(r)
 
         elif self.vendor_id:
-            vendor = None
-            for v in vendors:
-                if v.id == self.vendor_id:
-                    vendor = v
-                    break
-
+            vendor = next((v for v in vendors if v.id == self.vendor_id), None)
             if not vendor:
                 raise ValueError(f"vendor_id({self.vendor_id}) does not match any from 'vendors' JSON")
 
@@ -533,12 +502,10 @@ def print_resource_details(resource):
 def check_server_error(j, code):
     error = j["error"]
 
-    if code == 401:
-        # Unauthorized
-        if error.startswith("JWT expired"):
-            # Need to refresh the JWT
-            login(refresh=True)
-            return
+    if code == 401 and error.startswith("JWT expired"):
+        # Need to refresh the JWT
+        login(refresh=True)
+        return
 
     raise requests.exceptions.HTTPError(f"Unhandled HTTP Error... code {code}")
 
@@ -560,13 +527,11 @@ def get_resource_server_data(resource, stop=False):
 
     if response.ok:
         return response.json()[1]
-    else:
-        if not stop:
-            check_server_error(response.json(), response.status_code)
-            # Try one more time
-            return get_resource_server_data(resource, stop=True)
-        else:
-            raise requests.exceptions.HTTPError(f"Hard Stop with HTTP Error... code {response.status_code}")
+    if stop:
+        raise requests.exceptions.HTTPError(f"Hard Stop with HTTP Error... code {response.status_code}")
+    check_server_error(response.json(), response.status_code)
+    # Try one more time
+    return get_resource_server_data(resource, stop=True)
 
 
 def get_request_status(resource, stop=False):
@@ -598,12 +563,11 @@ def get_request_status(resource, stop=False):
         else:
             raise ValueError(f"Invalid server 'status': {status}\n")
     else:
-        if not stop:
-            check_server_error(response.json(), response.status_code)
-            # Try one more time
-            get_request_status(resource, stop=True)
-        else:
+        if stop:
             raise requests.exceptions.HTTPError(f"Hard Stop with HTTP Error... code {response.status_code}")
+        check_server_error(response.json(), response.status_code)
+        # Try one more time
+        get_request_status(resource, stop=True)
 
 
 def register_vendors(vendors):
@@ -786,11 +750,10 @@ def login(refresh=False):
 
     if refresh:
         j = [{"acvVersion": ACVP_VERSION}, {"accessToken": ACCESS_TOKEN}]
+    elif TOTP_SEED:
+        j = [{"acvVersion": ACVP_VERSION}, {"password": totp()}]
     else:
-        if TOTP_SEED:
-            j = [{"acvVersion": ACVP_VERSION}, {"password": totp()}]
-        else:
-            j = [{"acvVersion": ACVP_VERSION}]
+        j = [{"acvVersion": ACVP_VERSION}]
 
     request = {
         'url': f"https://{ACV_SERVER}/{ACV_API_PREFIX}/login",
